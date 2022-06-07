@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c21e0ead-5f02-48ab-8e7f-bde154201d20" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="8ac3f1ac-e7c3-4e3f-848b-bbc8eca244ab" />
+	<flow name="caching-demoFlow" doc:id="dac8274b-a6b8-4b78-a212-e2a4e9e195dd" >
+		<http:listener doc:name="Listener" doc:id="bbdaeef3-43de-4637-b0bc-1daea4fd4037" config-ref="HTTP_Listener_config" path="/store"/>
+		<os:store doc:id="a399ec88-5afa-41ad-a931-f5cfb86ab5a6" key="lookupdata">
+			<os:value ><![CDATA[Welcome to object store]]></os:value>
+		</os:store>
+	</flow>
+	<flow name="caching-demoFlow2" doc:id="316f5838-d392-4e9b-8903-2cd299abb727" >
+		<http:listener doc:name="Listener" doc:id="7874e958-fb08-4e1d-a0e6-3079cbc34124" config-ref="HTTP_Listener_config" path="/cache/{empId}"/>
+		<logger level="INFO" doc:name="Logger" doc:id="4e6224d7-5a29-44db-a4a0-1df4777e1395" message="flow start"/>
+		<ee:cache doc:name="Cache" doc:id="0b67b3f2-d5f6-4428-95fc-e00eb833ec1b" filterExpression='#[attributes.uriParams.empId == "5"]' cachingStrategy-ref="Caching_Strategy">
+			<logger level="INFO" doc:name="Logger" doc:id="31b09be4-3406-4c30-9d12-e5ec57fa1f5a" message="cache start"/>
+			<http:request method="GET" doc:name="Request" doc:id="a2457936-1bc0-4b58-93d1-50f95d8aafc2" url="https://reqres.in/api/users/{userId}">
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	"userId" : attributes.uriParams.empId
+}]]]></http:uri-params>
+		</http:request>
+			<ee:transform doc:name="Transform Message" doc:id="c04de1c0-f8a1-4ff6-8e38-30ab897490bf">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload.data]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="1bf257e9-6c49-4a28-82b3-33735d73ef1c" message="cache stop"/>
+		</ee:cache>
+		<logger level="INFO" doc:name="Logger" doc:id="c78aef7f-3a68-4e3f-a1fc-87046e549237" message="flow stop"/>
+	</flow>
+	<flow name="caching-demoFlow1" doc:id="caeace63-a126-48ac-857f-ff46ca72aa7e" >
+		<http:listener doc:name="Listener" doc:id="52a8dfdf-f938-477f-b4b9-f2928b2d4efe" config-ref="HTTP_Listener_config" path="/ret"/>
+		<os:retrieve doc:name="Retrieve" doc:id="6f7567b4-cfe2-4298-9c6f-f802b64d74c8" key="lookupdata">
+			<os:default-value ><![CDATA[""]]></os:default-value>
+		</os:retrieve>
+	</flow>
+	<!-- <flow name="caching-demoFlow2" doc:id="d4f006cd-b4c8-4efe-93e1-71a8502fffda" >
+		<http:listener doc:name="Listener" doc:id="b2f83c2c-faac-4f61-b1bd-d52df41758a5" config-ref="HTTP_Listener_config1" path="/test"/>
+		<logger level="INFO" doc:name="Logger" doc:id="c10a2bed-4153-4073-a392-fc6c4f68b06d" message="Started sample flow"/>
+		<ee:transform doc:name="Transform Message" doc:id="6bafdb38-d920-445a-b85e-81fc4f6a372f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+-&#45;&#45;
+{
+	"client_id":
+	"client_secret":
+	"audiance":
+	"grant_type":
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="3e034640-5587-465d-9500-c0ff8a9c140a" />
+		<set-variable value="" doc:name="Set Variable" doc:id="1276b22a-d3a8-4f83-b3bf-3bde397d2797" />
+		<ee:transform doc:name="Transform Message" doc:id="b96168bd-959d-428c-a7eb-5370fe232c0d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+-&#45;&#45;
+{
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="GET" doc:name="Request" doc:id="94a3b545-70dd-494e-a743-6ecf55cf567e" />
+	</flow> -->
+</mule>
